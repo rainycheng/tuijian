@@ -27,6 +27,8 @@ vectorizer = joblib.load("/home/html/tuijian/vectorizer"+str(sys.argv[1])+".m")
 transformer = joblib.load("/home/html/tuijian/tfidf"+str(sys.argv[1])+".m")
 kmeans = joblib.load("/home/html/tuijian/kmeans"+str(sys.argv[1])+".m")
 
+stopkey=[line.strip().decode('utf-8') for line in open('stopkey.txt').readlines()]
+
 # 打开数据库连接
 #db = MySQLdb.connect("127.0.0.1","root","1234","jhkfq",charset='utf8' )
 db = MySQLdb.connect("rds1fx2zo9067lgv33st.mysql.rds.aliyuncs.com","qylm","xkjd21ualk3Sd3i39","qylm",charset='utf8')
@@ -63,8 +65,13 @@ for id0 in data0:
             #print chinese_text
             seg_list = jieba.cut(chinese_text)
             chinese_seg = ' '.join(list(seg_list))    
-            corpus.append(chinese_seg)    
-        
+            #corpus.append(chinese_seg)    
+            outstr = ''
+            for word in chinese_seg:
+                if word not in stopkey:
+                    if word != '\t':
+                        outstr += word
+            corpus.append(outstr)
         
         if len(data)!=0:
            tfidf = transformer.transform(vectorizer.transform(corpus))
@@ -74,60 +81,60 @@ for id0 in data0:
         #   db2 = MySQLdb.connect("127.0.0.1","root","1234","tuijian",charset='utf8' )
         #   db2 = MySQLdb.connect("rds1fx2zo9067lgv33st.mysql.rds.aliyuncs.com","qylm","xkjd21ualk3Sd3i39","qylm",charset='utf8')
         #   cursor2 = db2.cursor()
-           sql2 = """INSERT INTO CLASSIFICATION(ID,LABEL)
+           sql2 = """INSERT INTO CLASSIFICATION(ID,PID,LABEL)
                      VALUES(
                   """
-           sql3 = """INSERT INTO RECOMMENDATION(ID,T1,T2,T3)
+           sql3 = """INSERT INTO RECOMMENDATION(ID,PID,T1,T2,T3)
                      VALUES(   
                   """
-           sql4 = "select id from classification where label="+str(clabel[0])
-           #print sql4
-           cursor.execute(sql4)
-           data2 = cursor.fetchall()
-        #   print data2
-           T1 = data2[random.randint(0,len(data2)-1)][0]
-           T2 = data2[random.randint(0,len(data2)-1)][0]
-           T3 = data2[random.randint(0,len(data2)-1)][0]
+#           sql4 = "select id from classification where label="+str(clabel[0]) + " AND PaperNameID=" + str(sys.argv[1])
+#           #print sql4
+#           cursor.execute(sql4)
+#           data2 = cursor.fetchall()
+#        #   print data2
+#           T1 = data2[random.randint(0,len(data2)-1)][0]
+#           T2 = data2[random.randint(0,len(data2)-1)][0]
+#           T3 = data2[random.randint(0,len(data2)-1)][0]
         
-           sqlc = sql2 + str(id0[0]) + ','+str(clabel[0])+')'
+           sqlc = sql2 + str(id0[0]) + ',' + str(sys.argv[1]) + ',' +str(clabel[0])+')'
            try:
                cursor.execute(sqlc)
            except:
                print sqlc
                print "ID already exists in classification\n"
         
-           sqlc = sql3 + str(id0[0]) + ','+str(T1)+','+str(T2)+','+str(T3)+')'
-           try:
-               cursor.execute(sqlc)
-           except:
-               print sqlc
-               print "ID already exists in recommendation\n"
+#           sqlc = sql3 + str(id0[0]) + ',' + str(sys.argv[1]) + ',' +str(T1)+','+str(T2)+','+str(T3)+')'
+#           try:
+#               cursor.execute(sqlc)
+#           except:
+#               print sqlc
+#               print "ID already exists in recommendation\n"
         
     except:
        print "HTML parse failed ID="+str(id0[0])
          
-       sql4 = "select id from classification where label=0"
+#       sql4 = "select id from classification where label=0"
+#    
+#       cursor.execute(sql4)
+#       data2 = cursor.fetchall()
+#    #   print data2
+#       T1 = data2[random.randint(0,len(data2)-1)][0]
+#       T2 = data2[random.randint(0,len(data2)-1)][0]
+#       T3 = data2[random.randint(0,len(data2)-1)][0]
     
-       cursor.execute(sql4)
-       data2 = cursor.fetchall()
-    #   print data2
-       T1 = data2[random.randint(0,len(data2)-1)][0]
-       T2 = data2[random.randint(0,len(data2)-1)][0]
-       T3 = data2[random.randint(0,len(data2)-1)][0]
-    
-       sqlc = sql2 + str(id0[0]) + ','+'0)'
+       sqlc = sql2 + str(id0[0]) + ',' + str(sys.argv[1]) + ',' +'0)'
        try:
            cursor.execute(sqlc)
        except:
            print sqlc
            print "ID already exists in classification\n"
     
-       sqlc = sql3 + str(id0[0]) + ','+str(T1)+','+str(T2)+','+str(T3)+')'
-       try:
-           cursor.execute(sqlc)
-       except:
-           print sqlc
-           print "ID already exists in recommendation\n"
+#       sqlc = sql3 + str(id0[0]) + ','+str(T1)+','+str(T2)+','+str(T3)+')'
+#       try:
+#           cursor.execute(sqlc)
+#       except:
+#           print sqlc
+#           print "ID already exists in recommendation\n"
     
     db.commit()
 db.close()

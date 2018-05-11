@@ -21,6 +21,7 @@ from sklearn.cluster import KMeans
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
+stopkey=[line.strip().decode('utf-8') for line in open('stopkey.txt').readlines()]
 
 #load trained model
 vectorizer = joblib.load("/home/html/tuijian/vectorizer"+str(sys.argv[2])+".m")
@@ -58,8 +59,13 @@ for content in data:
     #print chinese_text
     seg_list = jieba.cut(chinese_text)
     chinese_seg = ' '.join(list(seg_list))    
-    corpus.append(chinese_seg)    
-
+    #corpus.append(chinese_seg)    
+    outstr = ''
+    for word in chinese_seg:
+        if word not in stopkey:
+            if word != '\t':
+                outstr += word
+    corpus.append(outstr)
 
 if len(data)!=0:
    tfidf = transformer.transform(vectorizer.transform(corpus))
@@ -69,10 +75,10 @@ if len(data)!=0:
 #   db2 = MySQLdb.connect("127.0.0.1","root","1234","tuijian",charset='utf8' )
 #   db2 = MySQLdb.connect("rds1fx2zo9067lgv33st.mysql.rds.aliyuncs.com","qylm","xkjd21ualk3Sd3i39","qylm",charset='utf8')
 #   cursor2 = db2.cursor()
-   sql2 = """INSERT INTO CLASSIFICATION(ID,LABEL)
+   sql2 = """INSERT INTO CLASSIFICATION(ID,PID,LABEL)
              VALUES(
           """
-   sql3 = """INSERT INTO RECOMMENDATION(ID,T1,T2,T3)
+   sql3 = """INSERT INTO RECOMMENDATION(ID,PID,T1,T2,T3)
              VALUES(   
           """
    sql4 = "select id from classification where label="+str(clabel[0])
@@ -84,23 +90,24 @@ if len(data)!=0:
    T2 = data2[random.randint(0,len(data2)-1)][0]
    T3 = data2[random.randint(0,len(data2)-1)][0]
 
-   sqlc = sql2 + sys.argv[1] + ','+str(clabel[0])+')'
+   sqlc = sql2 + str(sys.argv[1]) + ','+ str(sys.argv[2]) + ',' +str(clabel[0])+')'
    try:
        cursor.execute(sqlc)
    except:
        print sqlc
        print "ID already exists in classification\n"
 
-   sqlc = sql3 + sys.argv[1] + ','+str(T1)+','+str(T2)+','+str(T3)+')'
-   try:
-       cursor.execute(sqlc)
-   except:
-       print sqlc
-       print "ID already exists in recommendation\n"
+##   sqlc = sql3 + str(sys.argv[1]) + ','+ str(sys.argv[2]) + ',' + str(T1)+','+str(T2)+','+str(T3)+')'
+##   try:
+##       cursor.execute(sqlc)
+##   except:
+##       print sqlc
+##       print "ID already exists in recommendation\n"
+##
+##else:
+##   print "No news content correspond to ID="+sys.argv[1]
+##     
 
-else:
-   print "No news content correspond to ID="+sys.argv[1]
-     
 #   sql4 = "select id from classification where label=0"
 #
 #   cursor2.execute(sql4)
